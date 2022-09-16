@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>qbtimer 🧩</title>
+    <link rel="stylesheet" href="./build/tailwind.css" />
+    <script src="/lib/cube.js"></script>
+    <script src="/lib/cubeStats.js"></script>
+  </head>
+  <body>
+    <div
+      x-data="timer"
+      class="flex flex-col min-h-screen p-4 space-y-4"
+      :class="timerState === 'started' ? 'bg-white text-black' : 'bg-black text-white'"
+      @keydown.space.document="hold"
+      @keyup.space.document="release"
+      @keydown.document="stop"
+      @keydown.escape.document="time = 0"
+      @touchstart.passive="hold"
+      @touchend.passive="release"
+    >
+      <main class="flex-grow space-y-4">
+        <h1 class="text-[#db1443]">qbtimer 🧩</h1>
+        <div class="flex items-center space-x-4">
+          <span x-text="scramble" class="flex-grow"></span
+          ><button type="button" @click="scramble = newScramble()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="block w-5 h-5 mx-auto"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          x-text="timerState === 'started' && !options.displayTime ? 'solve' : convertTime(time)"
+          class="text-xl"
+          :class="timerState === 'pending' ? 'text-blue-700' : timerState === 'ready' ? 'text-green-500' : ''"
+        ></div>
+        <table x-data="stats" class="text-center">
+          <thead>
+            <tr>
+              <th class="px-2">
+                <button
+                  @click="times = []"
+                  type="button"
+                  class="flex items-center"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5 text-red-700 fill-current"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="px-2">current</th>
+              <th class="px-2">best</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template hidden x-for="stat in stats" :key="stat.name">
+              <tr>
+                <td x-text="stat.name"></td>
+                <td
+                  x-text="stat.current === 0 ? '-' : convertTime(stat.current)"
+                ></td>
+                <td
+                  x-text="stat.best === 0 ? '-' : convertTime(stat.best)"
+                ></td>
+              </tr>
+            </template>
+            <tr>
+              <td>count</td>
+              <td x-text="times.length"></td>
+            </tr>
+          </tbody>
+        </table>
+        <ul class="overflow-y-scroll">
+          <template hidden x-for="(item, index) in times" :key="item.scramble">
+            <li :title="item.scramble" class="flex">
+              <span x-text="convertTime(item.time)" class="flex-grow"></span
+              ><button type="button" @click="deleteTime(index)">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-5 h-5 text-red-700 fill-current"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </li>
+          </template>
+        </ul>
+      </main>
+    </div>
+    <script
+      defer
+      src="https://unpkg.com/@alpinejs/persist@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script>
+      const timerStates = ['stopped', 'pending', 'ready', 'started']
+      const newScramble = () => cube().scramble().join(' ')
+
+      // https://tinloof.com/blog/how-to-build-a-stopwatch-with-html-css-js-react-part-2/
+      function convertTime(time) {
+        let diffInHrs = time / 3600000
+        let hh = Math.floor(diffInHrs)
+
+        let diffInMin = (diffInHrs - hh) * 60
+        let mm = Math.floor(diffInMin)
+
+        let diffInSec = (diffInMin - mm) * 60
+        let ss = Math.floor(diffInSec)
+
+        let diffInMs = (diffInSec - ss) * 100
+        let ms = Math.floor(diffInMs)
+
+        let formattedMM = mm.toString().padStart(2, '0')
+        let formattedSS = ss.toString().padStart(2, '0')
+        let formattedMS = ms.toString().padStart(2, '0')
+
+        return `${
+          formattedMM === '00' ? '' : `${formattedMM}:`
+        }${formattedSS}:${formattedMS}`
+      }
+      function stats(times) {
+        return [
+          {
+            name: 'time',
+            current: times.length > 0 ? times[0] : 0,
+            best: times.length > 0 ? Math.min(...times) : 0,
+          },
+          {
+            name: 'mo3',
+            current: getMean([...times].slice(-3)),
+            best: getBestMean(times, 3),
+          },
+          {
+            name: 'avg5',
+            current: getAverage([...times].slice(-5)),
+            best: getBestAverage(times, 5),
+          },
+          {
+            name: 'avg12',
+            current: getAverage([...times].slice(-12)),
+            best: getBestAverage(times, 12),
+          },
+        ]
+      }
+      function timer() {
+        return {
+          scramble: newScramble(),
+          time: 0,
+          times: this.$persist([]),
+          timerState: 'stopped',
+          held: false,
+          interval: null,
+          options: {
+            displayTime: true, //false,
+          },
+          startTime: null,
+          heldStart: null,
+          heldInterval: null,
+          stats() {
+            return stats(this.times.map(t => t.time))
+          },
+          hold(e) {
+            if (!this.held && this.timerState !== 'started') {
+              this.heldStart = Date.now()
+              this.held = true
+              this.timerState = 'pending'
+
+              const timeHeldDown = 1000
+
+              this.heldInterval = setInterval(() => {
+                if (Date.now() - this.heldStart >= timeHeldDown)
+                  this.timerState = 'ready'
+              }, 10)
+            }
+            if (e.type === 'touchstart' && this.timerState === 'started') {
+              this.stop()
+            }
+          },
+          release() {
+            clearInterval(this.heldInterval)
+            if (this.timerState !== 'started') {
+              this.held = false
+              if (this.timerState === 'pending') this.timerState = 'stopped'
+              else if (this.timerState === 'ready') {
+                this.startTime = Date.now()
+                this.timerState = 'started'
+                this.time = 0
+                this.interval = setInterval(() => {
+                  this.time = Date.now() - this.startTime
+                }, 10)
+              }
+            }
+          },
+          stop() {
+            if (this.timerState === 'started') {
+              this.timerState = 'stopped'
+              clearInterval(this.interval)
+              this.times = [
+                { time: this.time, scramble: this.scramble },
+                ...this.times,
+              ]
+              this.scramble = newScramble()
+            }
+          },
+          deleteTime(index) {
+            this.times.splice(index, 1)
+          },
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "vite-qbtimer",
+  "version": "1.0.0",
+  "author": "daniel lopez",
+  "scripts": {
+    "css": "npx tailwindcss -i ./tailwind.css -o ./build/tailwind.css --jit --purge \"./**/*.html\" -w",
+    "dev": "vite --port 1099 & npm run css",
+    "build": "vite build",
+    "preserve": "npm run build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "alpinejs": "^3.2.2"
+  },
+  "devDependencies": {
+    "eslint-config-baconjuice": "^1.0.3",
+    "vite": "^2.3.7"
+  },
+  "license": "ISC",
+  "eslintConfig": {
+    "extends": [
+      "baconjuice"
+    ]
+  }
+}
